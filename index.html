@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Capture Gallery</title>
+
+<style>
+body{
+    font-family: Arial;
+    background:#111;
+    color:white;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+}
+
+.section-title{
+    margin-top:30px;
+    margin-bottom:15px;
+}
+
+.gallery{
+    display:flex;
+    flex-wrap:wrap;
+    gap:15px;
+}
+button{
+    width:100%;
+    margin-top:8px;
+    padding:8px;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    opacity:0.9;
+}
+.card{
+    background:#222;
+    padding:10px;
+    border-radius:10px;
+}
+
+img{
+    width:300px;
+    border-radius:8px;
+}
+</style>
+
+</head>
+<body>
+
+<h1>Capture Gallery</h1>
+
+<h2 class="section-title">Screenshots</h2>
+<div id="screenshots" class="gallery"></div>
+
+<h2 class="section-title">Photos</h2>
+<div id="photos" class="gallery"></div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getDatabase,
+  ref,
+  onValue,
+  remove
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAsWsXapB3vh9_Gi-4jc6H1gkEbW8wcoxM",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://server2-7ede6-default-rtdb.firebaseio.com",
+  projectId: "server2-7ede6",
+  storageBucket: "server2-7ede6.appspot.com",
+  messagingSenderId: "802078732237",
+  appId: "1:802078732237:web:b36a60573a998ac9ad1e84"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+window.deleteCapture =
+async function(key){
+
+    if(
+      !confirm(
+        "Delete this image?"
+      )
+    ) return;
+
+    try{
+
+        await remove(
+          ref(
+            db,
+            "captures/" + key
+          )
+        );
+
+    }catch(err){
+
+        console.error(err);
+        alert("Delete failed");
+
+    }
+
+}
+const screenshotsDiv =
+  document.getElementById("screenshots");
+
+const photosDiv =
+  document.getElementById("photos");
+
+onValue(ref(db,"captures"), snapshot => {
+
+    screenshotsDiv.innerHTML = "";
+    photosDiv.innerHTML = "";
+
+    const data = snapshot.val();
+
+    if(!data) return;
+
+    Object.entries(data)
+      .sort((a,b)=>
+         b.timestamp-a.timestamp
+      )
+      .forEach(([key, item]) => {
+
+          const card =
+            document.createElement("div");
+
+          card.className = "card";
+
+         card.innerHTML = `
+  <a href="${item.url}" target="_blank">
+    <img src="${item.url}">
+  </a>
+
+  <p>
+    ${new Date(item.timestamp)
+      .toLocaleString()}
+  </p>
+
+  <button onclick="deleteCapture('${key}')">
+    Delete
+  </button>
+`;
+
+          if(item.type === "photo"){
+              photosDiv.appendChild(card);
+          } else {
+              screenshotsDiv.appendChild(card);
+          }
+
+      });
+
+});
+
+</script>
+
+</body>
+</html>
